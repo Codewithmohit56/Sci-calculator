@@ -1,4 +1,13 @@
 /* ============================================================
+   Sci-Calculator — script.js
+   Author : Mohit
+   ============================================================ */
+
+
+/*---------------------------------------------------------------------------------*/
+
+
+/* ============================================================
    GLASSCALC — LOGIC
    A dependency-free scientific calculator. No `eval()` is used;
    expressions are tokenized and evaluated by a small recursive-
