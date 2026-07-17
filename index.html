@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GlassCalc — Scientific Calculator</title>
+
+<!-- Google Fonts: Sora for UI text, Space Mono for the digit display -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Full-screen ambient backdrop that sits behind the calculator card -->
+  <div class="scene">
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
+    <!-- Root calculator card (glassmorphism panel) -->
+    <main class="calculator" id="calculator">
+
+      <!-- ============ HEADER: title + history toggle ============ -->
+      <header class="calc-header">
+        <span class="calc-title">GLASSCALC</span>
+        <button class="history-toggle" id="history-toggle" title="Toggle history" aria-label="Toggle history">⋯</button>
+      </header>
+
+      <!-- ============ HISTORY PANEL: collapsible list of past results ============ -->
+      <div class="history-panel" id="history-panel">
+        <div class="history-empty" id="history-empty">No calculations yet</div>
+        <ul class="history-list" id="history-list"></ul>
+      </div>
+
+      <!-- ============ DISPLAY: shows the expression being typed + the live value ============ -->
+      <div class="display-wrap">
+        <div class="expression" id="expression">&nbsp;</div>
+        <input type="text" id="display" class="display" value="0" readonly aria-label="Calculator display" inputmode="none">
+      </div>
+
+      <!-- ============ SCIENTIFIC + BASIC KEYPAD (always visible, 6-column grid) ============ -->
+      <div class="keypad">
+
+        <!-- Row 1: angle-mode 3-way switch + utility keys -->
+        <button class="btn util angle active" data-action="set-angle" data-angle="RAD" id="btn-rad">RAD</button>
+        <button class="btn util angle" data-action="set-angle" data-angle="DEG" id="btn-deg">DEG</button>
+        <button class="btn util angle" data-action="set-angle" data-angle="GRAD" id="btn-grad">GRAD</button>
+        <button class="btn util" data-action="clear">C</button>
+        <button class="btn util" data-action="delete" aria-label="Delete">⌫</button>
+        <button class="btn util" data-transform="percent">%</button>
+
+        <!-- Row 2: primary trig + log/ln + divide -->
+        <button class="btn fx" data-func="sin">sin</button>
+        <button class="btn fx" data-func="cos">cos</button>
+        <button class="btn fx" data-func="tan">tan</button>
+        <button class="btn fx" data-func="log">log</button>
+        <button class="btn fx" data-func="ln">ln</button>
+        <button class="btn op" data-value="/" data-type="operator">÷</button>
+
+        <!-- Row 3: inverse trig + 10^x / e^x + multiply -->
+        <button class="btn fx" data-func="asin">sin⁻¹</button>
+        <button class="btn fx" data-func="acos">cos⁻¹</button>
+        <button class="btn fx" data-func="atan">tan⁻¹</button>
+        <button class="btn fx" data-func="exp10">10ˣ</button>
+        <button class="btn fx" data-func="exp">eˣ</button>
+        <button class="btn op" data-value="*" data-type="operator">×</button>
+
+        <!-- Row 4: power / square / roots / factorial + subtract -->
+        <button class="btn fx" data-value="^" data-type="operator">xʸ</button>
+        <button class="btn fx" data-transform="square">x²</button>
+        <button class="btn fx" data-func="sqrt">√x</button>
+        <button class="btn fx" data-func="cbrt">∛x</button>
+        <button class="btn fx" data-transform="factorial">x!</button>
+        <button class="btn op" data-value="-" data-type="operator">−</button>
+
+        <!-- Row 5: constants, previous answer, parentheses + add -->
+        <button class="btn fx" data-const="pi">π</button>
+        <button class="btn fx" data-const="e">e</button>
+        <button class="btn fx" data-action="ans">Ans</button>
+        <button class="btn fx paren-pair" data-paren="(">(</button>
+        <button class="btn fx paren-pair" data-paren=")">)</button>
+        <button class="btn op" data-value="+" data-type="operator">+</button>
+
+        <!-- Row 6: reciprocal / inverse-square / alt logs / absolute value -->
+        <button class="btn fx" data-transform="reciprocal">x⁻¹</button>
+        <button class="btn fx" data-transform="inverseSquare">x⁻²</button>
+        <button class="btn fx" data-func="log">log₁₀</button>
+        <button class="btn fx" data-func="ln">logₑ</button>
+        <button class="btn fx" data-func="abs">|x|</button>
+
+        <!-- Equals key: spans 4 rows down the right edge (rows 6–9) -->
+        <button class="btn equal" data-action="equals">=</button>
+
+        <!-- Row 7: digits 7-9 + decimal point -->
+        <button class="btn num" data-value="7">7</button>
+        <button class="btn num" data-value="8">8</button>
+        <button class="btn num" data-value="9">9</button>
+        <button class="btn num wide" data-value=".">.</button>
+
+        <!-- Row 8: digits 4-6 + 0 -->
+        <button class="btn num" data-value="4">4</button>
+        <button class="btn num" data-value="5">5</button>
+        <button class="btn num" data-value="6">6</button>
+        <button class="btn num wide" data-value="0">0</button>
+
+        <!-- Row 9: digits 1-3 + sign toggle -->
+        <button class="btn num" data-value="1">1</button>
+        <button class="btn num" data-value="2">2</button>
+        <button class="btn num" data-value="3">3</button>
+        <button class="btn num wide" data-action="negate">+/−</button>
+
+      </div>
+<footer 
+ <h6 class="calc-footer">Designed & Developed by Mohit Kumar</h6>
+      <!-- <div class="calc-footer">Keyboard supported · Enter = equals · Esc = clear</div> -->
+       </footer>
+    </main>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>
