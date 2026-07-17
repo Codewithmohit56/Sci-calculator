@@ -1,0 +1,483 @@
+/* ============================================================
+   GLASSCALC — STYLESHEET
+   Sections, top to bottom:
+   1. Design tokens (CSS variables)
+   2. Page / background scaffolding
+   3. Calculator card shell
+   4. Header + history panel
+   5. Display
+   6. Keypad grid + shared button styles
+   7. Per-role button skins (util / angle / fx / op / num / equal)
+   8. Feedback states (pressed, active, error)
+   9. Responsive breakpoints
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. DESIGN TOKENS
+   Central colour + font palette. Everything else in this file
+   references these variables instead of hard-coded values, so
+   the whole theme can be re-tuned from one place.
+   ------------------------------------------------------------ */
+:root {
+  --bg-deep: #0a0b12;              /* page background */
+  --glass-bg: rgba(255, 255, 255, 0.06);        /* card fill */
+  --glass-bg-strong: rgba(255, 255, 255, 0.1);  /* slightly brighter glass */
+  --glass-border: rgba(255, 255, 255, 0.14);    /* hairline borders */
+  --text-primary: #f4f2ec;
+  --text-muted: rgba(244, 242, 236, 0.55);
+
+  --accent-orange: #ff8a4c;        /* operators + active angle mode */
+  --accent-orange-strong: #ff6a1a;
+  --accent-mint: #6ee7b7;          /* equals key */
+  --accent-mint-strong: #34c98d;
+  --accent-violet: #a78bfa;        /* utility-row accent text */
+  --accent-pink: #ff5d8f;          /* error state */
+
+  --btn-fx-bg: rgba(255, 255, 255, 0.05);       /* sin/cos/log/etc. keys */
+  --btn-num-bg: rgba(255, 255, 255, 0.09);      /* digit keys */
+  --btn-util-bg: rgba(148, 84, 92, 0.28);       /* RAD/DEG/GRAD/C/⌫/% row */
+
+  --shadow-deep: 0 30px 60px -20px rgba(0, 0, 0, 0.65);
+  --font-display: 'Sora', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+/* ------------------------------------------------------------
+   2. PAGE / BACKGROUND SCAFFOLDING
+   Resets margins/padding and centers the calculator card in
+   the viewport on top of an ambient two-tone glow.
+   ------------------------------------------------------------ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  width: 100vw;
+  font-family: var(--font-display);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Full-viewport wrapper that paints the orange → violet ambient glow */
+.scene {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(255, 106, 26, 0.22), transparent 45%),
+    radial-gradient(circle at 90% 90%, rgba(167, 139, 250, 0.2), transparent 50%),
+    var(--bg-deep);
+}
+
+/* Soft blurred colour blobs that drift slowly behind the card */
+.glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.5;
+  pointer-events: none;
+  animation: drift 12s ease-in-out infinite alternate;
+}
+
+.glow-1 {
+  width: 360px;
+  height: 360px;
+  background: var(--accent-orange-strong);
+  top: -60px;
+  left: -110px;
+}
+
+.glow-2 {
+  width: 320px;
+  height: 320px;
+  background: var(--accent-violet);
+  bottom: -100px;
+  right: -90px;
+  animation-delay: -6s;
+}
+
+/* Gentle floating motion for the glow blobs */
+@keyframes drift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(26px, 22px) scale(1.1); }
+}
+
+/* ------------------------------------------------------------
+   3. CALCULATOR CARD SHELL
+   The frosted-glass panel that holds everything.
+   ------------------------------------------------------------ */
+.calculator {
+  position: relative;
+  width: 420px;
+  max-width: 94vw;
+  padding: 22px 18px 18px;
+  border-radius: 26px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: var(--shadow-deep), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Card entrance animation on first load */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ------------------------------------------------------------
+   4. HEADER + HISTORY PANEL
+   ------------------------------------------------------------ */
+.calc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* "GLASSCALC" wordmark, top-left */
+.calc-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent-orange);
+}
+
+/* Small round "···" button that opens/closes the history list */
+.history-toggle {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.history-toggle:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.history-toggle:active {
+  transform: scale(0.92);
+}
+
+/* Collapsible container for past calculations; height-animates open/closed */
+.history-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.3s ease, margin 0.35s ease;
+  border-radius: 14px;
+}
+
+.history-panel.open {
+  max-height: 160px;
+  opacity: 1;
+  margin-bottom: 12px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge)                  remove white scrollbar line in history section */
+.history-panel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Placeholder text shown while history is empty */
+.history-empty {
+  padding: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.history-list {
+  list-style: none;
+}
+
+/* Each past calculation is a clickable row that reloads its result */
+.history-list li {
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.history-list li:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.history-list li:last-child {
+  border-bottom: none;
+}
+
+.history-list .h-result {
+  color: var(--accent-mint);
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------
+   5. DISPLAY
+   Two-line readout: a small grey "expression so far" line and
+   the large primary value/result below it.
+   ------------------------------------------------------------ */
+.display-wrap {
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 14px 16px 10px;
+  margin-bottom: 14px;
+  text-align: right;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* Small grey line showing the full expression while typing */
+.expression {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  min-height: 15px;
+  color: var(--text-muted);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Large primary number readout */
+.display {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: clamp(30px, 7vw, 42px);
+  font-weight: 700;
+  text-align: right;
+  caret-color: transparent;
+}
+
+/* ------------------------------------------------------------
+   6. KEYPAD GRID + SHARED BUTTON STYLES
+   Single 6-column grid holds every key (utility row, scientific
+   rows, operators, digits). Row/column placement for most keys
+   is automatic; only .equal (spans 4 rows) and .wide (spans 2
+   columns) need explicit spans — see section 7.
+   ------------------------------------------------------------ */
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+/* Base look shared by every key: shape, shadow, press transition */
+.btn {
+  height: 46px;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background: var(--btn-fx-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: transform 0.12s ease, filter 0.15s ease, background 0.2s ease;
+}
+
+.btn:hover {
+  filter: brightness(1.18);
+}
+
+.btn:active,
+.btn.pressed {
+  transform: scale(0.92);
+  filter: brightness(0.9);
+}
+
+/* Radial "flash" that briefly appears on tap, layered above the button */
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.35), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.btn.pressed::after {
+  opacity: 1;
+  transition: none;
+}
+
+/* ------------------------------------------------------------
+   7. PER-ROLE BUTTON SKINS
+   ------------------------------------------------------------ */
+
+/* Utility row: RAD / DEG / GRAD / C / ⌫ / % — muted maroon-purple */
+.btn.util {
+  background: var(--btn-util-bg);
+  color: var(--accent-violet);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.btn.util:hover {
+  background: rgba(148, 84, 92, 0.42);
+}
+
+/* The currently-selected angle unit (RAD/DEG/GRAD) is lit up in orange */
+.btn.angle.active {
+  background: linear-gradient(145deg, var(--accent-orange), var(--accent-orange-strong));
+  color: #1a0d05;
+}
+
+/* Scientific function keys: sin, cos, log, √x, π, Ans, parentheses, etc. */
+.btn.fx {
+  background: var(--btn-fx-bg);
+  color: var(--text-primary);
+  font-size: 13.5px;
+}
+
+.btn.fx:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Arithmetic operators: ÷ × − + — solid orange squares */
+.btn.op {
+  background: linear-gradient(145deg, var(--accent-orange), var(--accent-orange-strong));
+  color: #1a0d05;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* Outline applied to whichever operator is currently pending (e.g. after "5+") */
+.btn.op.active-op {
+  outline: 2px solid rgba(255, 255, 255, 0.75);
+  outline-offset: -2px;
+}
+
+/* Digit keys 0-9 and the decimal point */
+.btn.num {
+  background: var(--btn-num-bg);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+/* Digits that occupy two grid columns: "." / "0" / "+/-" (right-most per row) */
+.btn.wide {
+  grid-column: span 2;
+}
+
+/* Equals key: tall green bar spanning the 4 bottom-right rows */
+.btn.equal {
+  grid-row: span 4;
+  background: linear-gradient(160deg, var(--accent-mint), var(--accent-mint-strong));
+  color: #052e1c;
+  font-size: 24px;
+  font-weight: 700;
+  height: 100%;   /* fill the full height of the 4-row span */
+}
+
+.calc-footer {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.calc-footer h6 {
+  margin: 0;
+  font-size: 12px;
+  color: var(--accent-violet);
+}
+
+
+
+/* ------------------------------------------------------------
+   8. FEEDBACK STATES
+   ------------------------------------------------------------ */
+
+/* Red shake animation the display plays on a malformed/illegal expression */
+.display-wrap.error {
+  animation: shake 0.4s ease;
+  border-color: var(--accent-pink);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* ------------------------------------------------------------
+   9. RESPONSIVE BREAKPOINTS
+   ------------------------------------------------------------ */
+
+/* Phones: full-width card, smaller keys, tighter gaps */
+@media (max-width: 460px) {
+  .calculator {
+    width: 100%;
+    padding: 16px 12px 14px;
+    border-radius: 20px;
+  }
+  .keypad {
+    gap: 6px;
+  }
+  .btn {
+    height: 40px;
+    font-size: 12px;
+  }
+  .btn.num {
+    font-size: 16px;
+  }
+  .btn.op {
+    font-size: 16px;
+  }
+  .btn.equal {
+    font-size: 20px;
+  }
+}
+
+
+/* Tablets/desktops: roomier card and taller keys */
+@media (min-width: 700px) {
+  .calculator {
+    width: 460px;
+  }
+  .btn {
+    height: 52px;
+    font-size: 15px;
+  }
+  .btn.num {
+    font-size: 21px;
+  }
+}
